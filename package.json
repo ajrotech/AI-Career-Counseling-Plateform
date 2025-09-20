@@ -1,0 +1,118 @@
+{
+  "name": "career-counseling-platform",
+  "version": "1.0.0",
+  "description": "🚀 AI-Powered Career Counseling Platform - Complete solution for students and job seekers with career assessments, mentorship marketplace, and market insights. Built with Next.js 14 & NestJS for PEC Hackathon.",
+  "keywords": [
+    "career-counseling",
+    "nextjs",
+    "nestjs",
+    "typescript",
+    "career-assessment",
+    "mentorship",
+    "job-market-insights",
+    "hackathon",
+    "full-stack",
+    "react",
+    "tailwindcss",
+    "sqlite",
+    "jwt-auth"
+  ],
+  "homepage": "https://github.com/ajrotech/career-counseling-platform#readme",
+  "bugs": {
+    "url": "https://github.com/ajrotech/career-counseling-platform/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajrotech/career-counseling-platform.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "ajrotech",
+    "email": "ajrotech@example.com",
+    "url": "https://github.com/ajrotech"
+  },
+  "contributors": [
+    {
+      "name": "ajrotech",
+      "email": "ajrotech@example.com",
+      "url": "https://github.com/ajrotech"
+    }
+  ],
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm run start",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm run test",
+    "test:frontend": "cd frontend && npm run test",
+    "test:e2e": "npm run test:e2e:backend && npm run test:e2e:frontend",
+    "test:e2e:backend": "cd backend && npm run test:e2e",
+    "test:e2e:frontend": "cd frontend && npm run test:e2e",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "format": "npm run format:backend && npm run format:frontend",
+    "format:backend": "cd backend && npm run format",
+    "format:frontend": "cd frontend && npm run format",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd backend && rm -rf dist node_modules",
+    "clean:frontend": "cd frontend && rm -rf .next out node_modules",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "setup": "npm run install:all && npm run build",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "migration:run": "cd backend && npm run migration:run",
+    "migration:revert": "cd backend && npm run migration:revert",
+    "seed": "cd backend && npm run seed",
+    "db:reset": "cd backend && npm run db:reset",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged",
+    "deploy:prod": "./scripts/deploy-production.sh",
+    "deploy:staging": "./scripts/deploy-staging.sh",
+    "health:check": "curl -f http://localhost:3001/health && curl -f http://localhost:3000"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ajrotech"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}
