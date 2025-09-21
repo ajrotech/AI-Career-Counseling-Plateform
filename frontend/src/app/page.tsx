@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import HeroSection from '@/components/HeroSection';
+import FeaturesSection from '@/components/FeaturesSection';
+import RealtimeChat from '@/components/RealtimeChat';
 
 interface PlatformStatus {
   backend: 'loading' | 'running' | 'error';
@@ -81,9 +83,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-neutral-900 transition-colors duration-300">
       <Navigation />
       <HeroSection />
+      <FeaturesSection />
       
       {/* Features Section */}
       <section className="py-20 bg-white">
@@ -187,6 +190,20 @@ export default function HomePage() {
                 <p className="text-sm text-gray-600">{getStatusText(platformStatus.authentication)}</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Real-time Chat Demo */}
+      <section className="py-16 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Try Our AI Career Counselor</h2>
+            <p className="text-gray-600">Experience real-time AI-powered career guidance with WebSocket integration</p>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <RealtimeChat />
           </div>
         </div>
       </section>

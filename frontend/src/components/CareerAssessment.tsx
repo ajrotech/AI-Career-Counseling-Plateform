@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Home, X } from 'lucide-react';
+import { useApi, useApiMutation } from '../hooks/useApi';
+import assessmentsAPI from '../services/assessments';
 
 interface Question {
   id: number;
@@ -33,9 +36,48 @@ const CareerAssessment = () => {
   
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  const questions: Question[] = [
+  // Navigation helper with error handling
+  const navigateTo = (path: string, fallback?: string) => {
+    if (!mounted) {
+      console.warn('Navigation attempted before component mounted');
+      return;
+    }
+    
+    try {
+      console.log('Navigating to:', path);
+      router.push(path);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      if (fallback) {
+        console.log('Attempting fallback navigation to:', fallback);
+        router.push(fallback);
+      }
+    }
+  };
+
+  // Debug router status
+  useEffect(() => {
+    console.log('CareerAssessment component mounted, router available:', !!router);
+    setMounted(true);
+  }, []);
+
+  // API integration for assessment with questions and submission  
+  const { data: assessmentData, loading: assessmentLoading, error: assessmentError } = useApi(
+    () => assessmentsAPI.getAssessmentById('career-personality-assessment')
+  );
+
+  const submitAssessmentMutation = useApiMutation(assessmentsAPI.submitAssessment);
+
+  // Use API questions if available, otherwise fallback to local questions
+  const apiQuestions = (assessmentData && typeof assessmentData === 'object' && 'questions' in (assessmentData as { questions?: any[] }))
+    ? (assessmentData as { questions: any[] }).questions
+    : [];
+  
+  const localQuestions: Question[] = [
     {
       id: 1,
       category: "Work Environment",
@@ -127,12 +169,27 @@ const CareerAssessment = () => {
     }
   ];
 
+  // Combine API questions with local fallback questions
+  const questions = apiQuestions.length > 0 ? apiQuestions.map(q => ({
+    id: parseInt(q.id),
+    category: q.category || 'General',
+    question: q.question,
+    type: q.type === 'scale' ? 'scale' as const : 
+          q.type === 'multiple-choice' ? 'multiple' as const : 'multiple' as const,
+    options: q.options,
+    scaleMin: q.scaleRange?.min || 1,
+    scaleMax: q.scaleRange?.max || 10,
+    scaleLabels: q.scaleRange?.labels ? 
+      { min: q.scaleRange.labels[0] || 'Min', max: q.scaleRange.labels[1] || 'Max' } :
+      { min: 'Min', max: 'Max' }
+  })) : localQuestions;
+
   useEffect(() => {
     setAssessment(prev => ({
       ...prev,
       totalSteps: questions.length
     }));
-  }, []);
+  }, [questions]);
 
   const handleAnswer = (questionId: number, answer: any) => {
     setAssessment(prev => ({
@@ -167,8 +224,42 @@ const CareerAssessment = () => {
   const completeAssessment = async () => {
     setIsLoading(true);
     
-    // Simulate API call to process results
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Prepare submission data
+      const responses = Object.entries(assessment.answers).map(([questionId, answer]) => ({
+        questionId: questionId,
+        answer: answer
+      }));
+
+      const submission = {
+        assessmentId: (assessmentData as { id?: string })?.id || 'career-personality-assessment',
+        responses,
+        timeSpent: Math.floor((new Date().getTime() - assessment.timeStarted.getTime()) / 1000)
+      };
+
+      // Submit to API
+      const result = await submitAssessmentMutation.mutate(submission);
+      
+      if (result.success && result.data) {
+        // Convert API results to local format
+        const apiResults = result.data.results.careerMatches.map(match => ({
+          title: match.title,
+          match: match.matchPercentage,
+          description: match.description,
+          skills: match.requiredSkills,
+          salary: match.averageSalary || "Contact for details",
+          growth: "Growth data not available"
+        }));
+        setResults(apiResults);
+      } else {
+        // Fallback to local calculation if API fails
+        setResults(calculateResults());
+      }
+    } catch (error) {
+      console.error('Assessment submission failed:', error);
+      // Fallback to local calculation
+      setResults(calculateResults());
+    }
     
     setAssessment(prev => ({
       ...prev,
@@ -214,6 +305,20 @@ const CareerAssessment = () => {
   const currentQuestion = questions[assessment.currentStep];
   const progress = ((assessment.currentStep + 1) / questions.length) * 100;
   const canProceed = assessment.answers[currentQuestion?.id] !== undefined;
+
+  // Loading state while fetching assessment
+  if (assessmentLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading assessment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If API fails, just continue with local questions (no error message needed)
 
   if (showResults) {
     const results = calculateResults();
@@ -292,13 +397,13 @@ const CareerAssessment = () => {
             <p className="text-blue-100 mb-6">Connect with mentors, explore job opportunities, and start your career journey.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push('/mentorship')}
+                onClick={() => navigateTo('/mentorship')}
                 className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
                 Find Mentors
               </button>
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => navigateTo('/dashboard', '/')}
                 className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
                 View Dashboard
@@ -325,6 +430,41 @@ const CareerAssessment = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Navigation Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigateTo('/dashboard', '/')}
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back to Dashboard</span>
+              </button>
+              <div className="hidden sm:block text-gray-300">|</div>
+              <button
+                onClick={() => navigateTo('/')}
+                className="hidden sm:flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to exit the assessment? Your progress will be lost.')) {
+                  navigateTo('/dashboard', '/');
+                }
+              }}
+              className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              title="Exit Assessment"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
         {/* Progress Header */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
@@ -365,7 +505,7 @@ const CareerAssessment = () => {
                       name={`question-${currentQuestion.id}`}
                       value={option}
                       checked={assessment.answers[currentQuestion.id] === option}
-                      onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
+                      onChange={(e) => handleAnswer(typeof currentQuestion.id === 'string' ? parseInt(currentQuestion.id) : currentQuestion.id, e.target.value)}
                       className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     />
                     <span className="text-gray-700">{option}</span>
@@ -390,7 +530,7 @@ const CareerAssessment = () => {
                           name={`question-${currentQuestion.id}`}
                           value={value}
                           checked={assessment.answers[currentQuestion.id] === value}
-                          onChange={(e) => handleAnswer(currentQuestion.id, parseInt(e.target.value))}
+                          onChange={(e) => handleAnswer(typeof currentQuestion.id === 'string' ? parseInt(currentQuestion.id) : currentQuestion.id, parseInt(e.target.value))}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mb-1"
                         />
                         <span className="text-sm text-gray-600">{value}</span>

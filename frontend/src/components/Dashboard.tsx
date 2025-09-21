@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useApi, useApiMutation } from '../hooks/useApi';
+import userAPI, { DashboardData, UserStats } from '../services/user';
 import Navigation from './Navigation';
 
+// Update interface to match API types
 interface DashboardStats {
   assessmentsCompleted: number;
   mentoringSessions: number;
@@ -29,15 +33,62 @@ interface MentorSession {
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Safe fallback - try to use auth but handle errors gracefully
+  let user = null;
+  let isAuthenticated = false;
+  let authLoading = false;
+  
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    isAuthenticated = auth.isAuthenticated;
+    authLoading = auth.isLoading;
+  } catch (error) {
+    console.warn('Auth context not available, using guest mode');
+  }
 
-  const stats: DashboardStats = {
+  // Try to use API but handle errors gracefully
+  let dashboardData = null;
+  let isDashboardLoading = false;
+  let dashboardError = null;
+  let refetchDashboard = () => window.location.reload();
+  
+  try {
+    const apiData = useApi(() => userAPI.getDashboardData(), [], isAuthenticated);
+    dashboardData = apiData.data;
+    isDashboardLoading = apiData.loading;
+    dashboardError = apiData.error;
+    refetchDashboard = apiData.refetch || refetchDashboard;
+  } catch (error) {
+    console.warn('API hooks not available, using demo data');
+  }
+
+  // Handle loading states
+  if (authLoading || isDashboardLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Loading Dashboard</h2>
+          <p className="text-gray-600 dark:text-gray-400">Fetching your latest data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error message with fallback data
+  const showErrorBanner = dashboardError && !isDashboardLoading;
+
+  // Use API data if available, otherwise fallback to default data
+  const stats: DashboardStats = dashboardData?.stats || {
     assessmentsCompleted: 3,
     mentoringSessions: 7,
     careerMatches: 12,
     profileCompleteness: 85,
   };
 
-  const recentAssessments: Assessment[] = [
+  const recentAssessments: Assessment[] = dashboardData?.recentAssessments || [
     {
       id: '1',
       title: 'Career Personality Assessment',
@@ -306,9 +357,33 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, John!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {user?.name || 'John'}!</h1>
           <p className="text-gray-600">Track your career development journey and discover new opportunities.</p>
         </div>
+
+        {/* Error Banner */}
+        {showErrorBanner && (
+          <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  Unable to connect to server. Showing demo data. 
+                  <button 
+                    onClick={() => refetchDashboard()}
+                    className="font-medium underline hover:text-yellow-800 ml-1"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mb-8">

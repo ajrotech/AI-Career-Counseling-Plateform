@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -22,6 +22,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { TokenService } from './services/token.service';
 import { EmailService } from './services/email.service';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, UserProfile]),
@@ -55,6 +56,8 @@ import { EmailService } from './services/email.service';
     JwtAuthGuard,
     RolesGuard,
     JwtStrategy,
+    JwtModule,
+    TypeOrmModule,
   ],
 })
 export class AuthModule {}

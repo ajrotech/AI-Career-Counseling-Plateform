@@ -1,11 +1,31 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Inter, Roboto } from 'next/font/google'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { AuthProvider } from '@/contexts/AuthContext'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap'
+})
+
+const roboto = Roboto({ 
+  weight: ['300', '400', '500', '700'],
+  subsets: ['latin'],
+  variable: '--font-roboto',
+  display: 'swap'
+})
 
 export const metadata = {
-  title: 'Career Counseling Platform',
-  description: 'A comprehensive platform for career guidance and mentorship',
+  title: 'Career Counseling Platform - AI-Powered Career Guidance',
+  description: 'Discover your perfect career path with AI-powered assessments, connect with industry mentors, and access real-time market insights. Your future starts here.',
+  keywords: 'career counseling, career guidance, AI assessment, mentorship, job market insights, career development',
+  authors: [{ name: 'Career Counseling Platform Team' }],
+  viewport: 'width=device-width, initial-scale=1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#2563eb' },
+    { media: '(prefers-color-scheme: dark)', color: '#1f2937' }
+  ],
 }
 
 export default function RootLayout({
@@ -14,8 +34,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${inter.variable} ${roboto.variable}`}>
+      <body className={`${roboto.className} antialiased`}>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

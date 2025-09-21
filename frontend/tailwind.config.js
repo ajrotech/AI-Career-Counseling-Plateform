@@ -5,35 +5,71 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        'heading': ['Inter', 'Poppins', 'system-ui', 'sans-serif'],
+        'body': ['Roboto', 'Open Sans', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        // Primary theme - Blue (blue-600, indigo-500)
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-          950: '#082f49',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb', // Main primary color
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
         },
+        // Secondary theme - Green (emerald-500)
         secondary: {
-          50: '#fdf4ff',
-          100: '#fae8ff',
-          200: '#f5d0fe',
-          300: '#f0abfc',
-          400: '#e879f9',
-          500: '#d946ef',
-          600: '#c026d3',
-          700: '#a21caf',
-          800: '#86198f',
-          900: '#701a75',
-          950: '#4a044e',
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981', // Main secondary color
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+          950: '#022c22',
         },
+        // Neutral theme - Gray
+        neutral: {
+          50: '#f9fafb',
+          100: '#f3f4f6', // Light neutral
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937', // Dark neutral
+          900: '#111827',
+          950: '#030712',
+        },
+        // Accent theme - Yellow (amber-400)
+        accent: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24', // Main accent color
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+          950: '#451a03',
+        },
+        // Success states
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -47,6 +83,7 @@ module.exports = {
           900: '#14532d',
           950: '#052e16',
         },
+        // Warning states
         warning: {
           50: '#fffbeb',
           100: '#fef3c7',
@@ -150,6 +187,10 @@ module.exports = {
         'hero-pattern': "url('/images/hero-bg.svg')",
       },
       boxShadow: {
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
+        'glow-green': '0 0 20px rgba(16, 185, 129, 0.5)',
+        'glow-yellow': '0 0 20px rgba(251, 191, 36, 0.5)',
         'inner-lg': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.1)',
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -160,10 +201,7 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
-    require('@tailwindcss/line-clamp'),
   ],
   darkMode: 'class',
 };

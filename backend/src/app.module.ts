@@ -17,6 +17,8 @@ import { RoadmapsModule } from './modules/roadmaps/roadmaps.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 // Database configuration
 import { typeOrmConfig } from './config/typeorm.config';
@@ -64,6 +66,8 @@ import { AppService } from './app.service';
     ResourcesModule,
     AdminModule,
     NotificationsModule,
+    ChatModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

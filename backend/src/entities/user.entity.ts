@@ -137,6 +137,12 @@ export class User {
   @OneToMany('Resource', 'createdBy')
   createdResources: any[];
 
+  @OneToMany('ChatSession', 'user')
+  chatSessions: any[];
+
+  @OneToMany('ChatMessage', 'user')
+  chatMessages: any[];
+
   // Methods
   isAccountLocked(): boolean {
     return this.lockedUntil && this.lockedUntil > new Date();

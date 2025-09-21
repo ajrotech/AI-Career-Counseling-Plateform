@@ -339,6 +339,28 @@ CREATE TABLE institution_members (
     UNIQUE(institution_id, user_id)
 );
 
+-- 17. Chat Sessions Table
+CREATE TABLE chat_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL DEFAULT 'New Chat',
+    context TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 18. Chat Messages Table  
+CREATE TABLE chat_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -360,6 +382,11 @@ CREATE INDEX idx_roadmap_steps_roadmap_id ON roadmap_steps(roadmap_id);
 CREATE INDEX idx_user_progress_user_id ON user_progress(user_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
+CREATE INDEX idx_chat_sessions_is_active ON chat_sessions(is_active);
+CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
+CREATE INDEX idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
 
 -- Full-text search indexes
 CREATE INDEX idx_resources_search ON resources USING GIN(to_tsvector('english', title || ' ' || description));
@@ -389,3 +416,93 @@ CREATE TRIGGER update_roadmap_steps_updated_at BEFORE UPDATE ON roadmap_steps FO
 CREATE TRIGGER update_resources_updated_at BEFORE UPDATE ON resources FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_progress_updated_at BEFORE UPDATE ON user_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_institutions_updated_at BEFORE UPDATE ON institutions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_chat_sessions_updated_at BEFORE UPDATE ON chat_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Analytics Tables
+
+-- User Sessions Table
+CREATE TABLE user_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    session_start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    session_end TIMESTAMP,
+    ip_address INET,
+    user_agent TEXT,
+    device_type VARCHAR(50),
+    browser VARCHAR(50),
+    duration_seconds INTEGER DEFAULT 0,
+    pages_visited TEXT[],
+    actions_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Analytics Events Table
+CREATE TYPE analytics_event_type AS ENUM (
+    'page_view', 'button_click', 'form_submit', 'assessment_start', 
+    'assessment_complete', 'chat_message', 'mentor_booking', 
+    'resource_view', 'download', 'search', 'login', 'logout', 'registration'
+);
+
+CREATE TABLE analytics_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    session_id UUID REFERENCES user_sessions(id) ON DELETE SET NULL,
+    event_type analytics_event_type NOT NULL,
+    event_category VARCHAR(100),
+    event_action VARCHAR(100),
+    event_label VARCHAR(100),
+    event_value INTEGER,
+    page_url TEXT,
+    page_title VARCHAR(255),
+    referrer TEXT,
+    properties JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    device_type VARCHAR(50),
+    browser VARCHAR(50),
+    country VARCHAR(100),
+    city VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Engagement Metrics Table
+CREATE TABLE user_engagement_metrics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    metric_date DATE NOT NULL,
+    total_sessions INTEGER DEFAULT 0,
+    total_time_minutes INTEGER DEFAULT 0,
+    pages_viewed INTEGER DEFAULT 0,
+    actions_taken INTEGER DEFAULT 0,
+    assessments_started INTEGER DEFAULT 0,
+    assessments_completed INTEGER DEFAULT 0,
+    chat_messages_sent INTEGER DEFAULT 0,
+    mentor_sessions_booked INTEGER DEFAULT 0,
+    resources_viewed INTEGER DEFAULT 0,
+    downloads_made INTEGER DEFAULT 0,
+    search_queries INTEGER DEFAULT 0,
+    feature_usage JSONB,
+    engagement_score DECIMAL(5,2) DEFAULT 0,
+    retention_indicator BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, metric_date)
+);
+
+-- Add triggers for analytics tables
+CREATE TRIGGER update_user_sessions_updated_at BEFORE UPDATE ON user_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_engagement_metrics_updated_at BEFORE UPDATE ON user_engagement_metrics FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Indexes for analytics performance
+CREATE INDEX idx_analytics_events_user_id ON analytics_events(user_id);
+CREATE INDEX idx_analytics_events_session_id ON analytics_events(session_id);
+CREATE INDEX idx_analytics_events_type ON analytics_events(event_type);
+CREATE INDEX idx_analytics_events_created_at ON analytics_events(created_at);
+CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX idx_user_sessions_active ON user_sessions(is_active) WHERE is_active = true;
+CREATE INDEX idx_user_sessions_start ON user_sessions(session_start);
+CREATE INDEX idx_user_engagement_user_date ON user_engagement_metrics(user_id, metric_date);
+CREATE INDEX idx_user_engagement_date ON user_engagement_metrics(metric_date);
+CREATE INDEX idx_user_engagement_score ON user_engagement_metrics(engagement_score);
