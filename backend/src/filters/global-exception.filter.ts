@@ -91,14 +91,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return String(exception);
   }
 
-  private sanitizeMessage(message: string, status: number): string {
+  private sanitizeMessage(message: string | string[], status: number): string {
     // Don't expose internal error details in production
     if (process.env.NODE_ENV === 'production' && status >= 500) {
       return 'Internal server error. Please try again later.';
     }
 
+    // Convert array messages to string
+    const messageStr = Array.isArray(message) ? message.join(', ') : String(message);
+
     // Sanitize sensitive information
-    return message
+    return messageStr
       .replace(/password/gi, '***')
       .replace(/token/gi, '***')
       .replace(/key/gi, '***');

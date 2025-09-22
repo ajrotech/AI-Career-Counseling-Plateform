@@ -74,7 +74,6 @@
     "migration:revert": "cd backend && npm run migration:revert",
     "seed": "cd backend && npm run seed",
     "db:reset": "cd backend && npm run db:reset",
-    "prepare": "husky install",
     "pre-commit": "lint-staged",
     "deploy:prod": "./scripts/deploy-production.sh",
     "deploy:staging": "./scripts/deploy-staging.sh",

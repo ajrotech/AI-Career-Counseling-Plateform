@@ -89,11 +89,9 @@ export class CareerRoadmap {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Relations
-  @ManyToOne(() => User, (user) => user.careerRoadmaps)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
+  // Relations - Removed for MongoDB compatibility
+  // User relationship managed via userId field
+  
   @OneToMany(() => RoadmapStep, (step) => step.roadmap)
   steps: RoadmapStep[];
 

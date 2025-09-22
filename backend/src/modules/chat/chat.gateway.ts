@@ -31,7 +31,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client connected: ${client.id}`);
     
     // Extract userId from query params or auth token
-    const userId = client.handshake.query.userId as string || 'demo-user-id';
+    const userId = client.handshake.query.userId as string;
+    
+    if (!userId) {
+      this.logger.error('Client connection rejected: No userId provided');
+      client.emit('error', { message: 'Authentication required: userId must be provided' });
+      client.disconnect();
+      return;
+    }
+    
     this.connectedUsers.set(client.id, userId);
     
     // Join user to their personal room
@@ -52,7 +60,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const userId = this.connectedUsers.get(client.id) || 'demo-user-id';
+      const userId = this.connectedUsers.get(client.id);
+      
+      if (!userId) {
+        client.emit('error', { message: 'User not authenticated' });
+        return;
+      }
       
       // Emit typing indicator to user
       client.emit('aiTyping', { typing: true });

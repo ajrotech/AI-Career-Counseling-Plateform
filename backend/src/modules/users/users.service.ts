@@ -82,7 +82,7 @@ export class UsersService {
         githubProfile: updateProfileDto.githubUrl,
         portfolioWebsite: updateProfileDto.portfolioUrl,
       });
-      profile.user = user;
+      // profile.user = user; // Removed for MongoDB compatibility
     } else {
       // Update existing profile
       if (updateProfileDto.firstName !== undefined) profile.firstName = updateProfileDto.firstName;

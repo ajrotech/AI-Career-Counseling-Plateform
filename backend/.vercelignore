@@ -1,0 +1,15 @@
+node_modules
+*.log
+.env
+.env.*
+dist
+test
+jest.config.js
+.git
+.gitignore
+README.md
+documentation
+*.md
+database.sqlite
+src/**/*.spec.ts
+src/**/*.test.ts

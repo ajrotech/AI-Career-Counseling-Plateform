@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne } from 'typeorm';
-import { User } from './user.entity';
-import { ChatSession } from './chat-session.entity';
+import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn } from 'typeorm';
 
 export enum MessageRole {
   USER = 'user',
@@ -10,8 +8,8 @@ export enum MessageRole {
 
 @Entity('chat_messages')
 export class ChatMessage {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @ObjectIdColumn()
+  _id: ObjectId;
 
   @Column({ type: 'varchar', length: 20 })
   role: string;
@@ -22,18 +20,17 @@ export class ChatMessage {
   @Column({ type: 'text', nullable: true })
   metadata: string;
 
-  @ManyToOne(() => ChatSession, session => session.messages)
-  session: ChatSession;
-
   @Column()
   sessionId: string;
-
-  @ManyToOne(() => User, user => user.chatMessages)
-  user: User;
 
   @Column()
   userId: string;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // Helper method to get string ID
+  get id(): string {
+    return this._id.toHexString();
+  }
 }

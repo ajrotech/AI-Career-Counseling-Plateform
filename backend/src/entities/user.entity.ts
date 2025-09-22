@@ -1,6 +1,7 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  ObjectIdColumn,
+  ObjectId,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -14,13 +15,13 @@ import {
 @Index(['email'], { unique: true })
 @Index(['username'], { unique: true })
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @ObjectIdColumn()
+  _id: ObjectId;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ type: 'varchar', length: 255 })
   email: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   username: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -106,42 +107,39 @@ export class User {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  // Relations - using lazy loading to avoid circular imports
-  @OneToOne('UserProfile', 'user', { cascade: true })
-  profile: any;
+  // Profile data as JSON for MongoDB compatibility
+  @Column({ type: 'json', nullable: true })
+  profile?: {
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: Date;
+    gender?: string;
+    phoneNumber?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+    bio?: string;
+    website?: string;
+    linkedinUrl?: string;
+    linkedinProfile?: string;
+    githubUrl?: string;
+    githubProfile?: string;
+    portfolioWebsite?: string;
+    skills?: string; // JSON string for MongoDB compatibility
+    interests?: string; // JSON string for MongoDB compatibility
+    currentEducation?: string;
+    fieldOfStudy?: string;
+    currentJobTitle?: string;
+    currentCompany?: string;
+    yearsOfExperience?: number;
+  };
 
-  @OneToOne('Mentor', 'user', { cascade: true })
-  mentor: any;
-
-  @OneToMany('AssessmentResult', 'user')
-  assessmentResults: any[];
-
-  @OneToMany('Booking', 'student')
-  bookings: any[];
-
-  @OneToMany('Payment', 'user')
-  payments: any[];
-
-  @OneToOne('Subscription', 'user')
-  subscription: any;
-
-  @OneToMany('CareerRoadmap', 'user')
-  careerRoadmaps: any[];
-
-  @OneToMany('UserProgress', 'user')
-  progress: any[];
-
-  @OneToMany('Notification', 'user')
-  notifications: any[];
-
-  @OneToMany('Resource', 'createdBy')
-  createdResources: any[];
-
-  @OneToMany('ChatSession', 'user')
-  chatSessions: any[];
-
-  @OneToMany('ChatMessage', 'user')
-  chatMessages: any[];
+  // Helper method to get string ID
+  get id(): string {
+    return this._id.toHexString();
+  }
 
   // Methods
   isAccountLocked(): boolean {

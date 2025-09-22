@@ -4,11 +4,15 @@ import { join } from 'path';
 
 export const typeOrmConfig = async (
   configService: ConfigService,
-): Promise<TypeOrmModuleOptions> => ({
-  type: 'sqlite',
-  database: join(__dirname, '../../database.sqlite'),
-  entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
-  migrations: [join(__dirname, '/../database/migrations/*{.ts,.js}')],
-  synchronize: configService.get('NODE_ENV') === 'development',
-  logging: configService.get('NODE_ENV') === 'development',
-});
+): Promise<TypeOrmModuleOptions> => {
+  const isProduction = configService.get('NODE_ENV') === 'production';
+  
+  // MongoDB configuration for all environments
+  return {
+    type: 'mongodb',
+    url: configService.get('MONGODB_URI'),
+    entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
+    synchronize: false, // Temporarily disabled to avoid index conflicts
+    logging: !isProduction, // Only log in development
+  };
+};

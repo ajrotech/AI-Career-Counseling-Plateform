@@ -84,10 +84,8 @@ export class Subscription {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Relations
-  @OneToOne(() => User, (user) => user.subscription)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  // Relations - Removed for MongoDB compatibility
+  // User relationship managed via userId field
 
   // Helper methods for JSON fields
   setFeatures(features: Record<string, any>) {

@@ -12,11 +12,6 @@ export class JwtAuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
     
     if (!token) {
-      // For development, allow access without token
-      if (process.env.NODE_ENV === 'development') {
-        request.user = this.createDemoUser();
-        return true;
-      }
       throw new UnauthorizedException('No token provided');
     }
 
@@ -34,11 +29,6 @@ export class JwtAuthGuard implements CanActivate {
       
       return true;
     } catch (error) {
-      // For development, fallback to demo user
-      if (process.env.NODE_ENV === 'development') {
-        request.user = this.createDemoUser();
-        return true;
-      }
       throw new UnauthorizedException('Invalid token');
     }
   }
@@ -46,16 +36,5 @@ export class JwtAuthGuard implements CanActivate {
   private extractTokenFromHeader(request: any): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
-  }
-
-  private createDemoUser(): any {
-    return {
-      id: 'demo-user-id',
-      email: 'demo@example.com',
-      username: 'demo_user',
-      role: 'student',
-      emailVerified: true,
-      isActive: true,
-    };
   }
 }

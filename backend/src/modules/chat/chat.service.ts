@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ObjectId } from 'typeorm';
 import { ChatSession } from '../../entities/chat-session.entity';
 import { ChatMessage, MessageRole } from '../../entities/chat-message.entity';
 import { User } from '../../entities/user.entity';
@@ -21,16 +22,10 @@ export class ChatService {
   ) {}
 
   async createSession(userId: string, createSessionDto: CreateSessionDto): Promise<ChatSessionResponse> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new Error('User not found');
-    }
-
     const session = this.chatSessionRepository.create({
       title: createSessionDto.title || 'New Chat',
       context: createSessionDto.context,
       userId,
-      user,
     });
 
     const savedSession = await this.chatSessionRepository.save(session);
@@ -49,27 +44,40 @@ export class ChatService {
     const sessions = await this.chatSessionRepository.find({
       where: { userId, isActive: true },
       order: { updatedAt: 'DESC' },
-      relations: ['messages'],
     });
 
-    return sessions.map(session => ({
-      id: session.id,
-      title: session.title,
-      context: session.context,
-      isActive: session.isActive,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-      messageCount: session.messages?.length || 0,
-      lastMessage: session.messages && session.messages.length > 0 
-        ? {
-            id: session.messages[session.messages.length - 1].id,
-            content: session.messages[session.messages.length - 1].content,
-            role: session.messages[session.messages.length - 1].role as 'user' | 'assistant' | 'system',
-            sessionId: session.messages[session.messages.length - 1].sessionId,
-            createdAt: session.messages[session.messages.length - 1].createdAt,
-          }
-        : undefined,
-    }));
+    // For MongoDB, we fetch message counts separately
+    const sessionsWithCounts = await Promise.all(
+      sessions.map(async (session) => {
+        const messageCount = await this.chatMessageRepository.count({
+          where: { sessionId: session.id }
+        });
+        
+        const lastMessage = await this.chatMessageRepository.findOne({
+          where: { sessionId: session.id },
+          order: { createdAt: 'DESC' }
+        });
+
+        return {
+          id: session.id,
+          title: session.title,
+          context: session.context,
+          isActive: session.isActive,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          messageCount,
+          lastMessage: lastMessage ? {
+            id: lastMessage.id,
+            content: lastMessage.content,
+            role: lastMessage.role as 'user' | 'assistant' | 'system',
+            sessionId: lastMessage.sessionId,
+            createdAt: lastMessage.createdAt,
+          } : undefined,
+        };
+      })
+    );
+
+    return sessionsWithCounts;
   }
 
   async getSession(sessionId: string, userId: string): Promise<ChatSessionResponse | null> {
@@ -79,7 +87,6 @@ export class ChatService {
     
     const session = await this.chatSessionRepository.findOne({
       where: { id: sessionId, userId, isActive: true },
-      relations: ['messages'],
     });
 
     if (!session) {
@@ -89,6 +96,16 @@ export class ChatService {
 
     console.log('✅ [CHAT SERVICE] Session found:', session.title);
     
+    // Get message count and last message separately
+    const messageCount = await this.chatMessageRepository.count({
+      where: { sessionId: session.id }
+    });
+    
+    const lastMessage = await this.chatMessageRepository.findOne({
+      where: { sessionId: session.id },
+      order: { createdAt: 'DESC' }
+    });
+    
     return {
       id: session.id,
       title: session.title,
@@ -96,16 +113,14 @@ export class ChatService {
       isActive: session.isActive,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
-      messageCount: session.messages?.length || 0,
-      lastMessage: session.messages && session.messages.length > 0 
-        ? {
-            id: session.messages[session.messages.length - 1].id,
-            content: session.messages[session.messages.length - 1].content,
-            role: session.messages[session.messages.length - 1].role as 'user' | 'assistant' | 'system',
-            sessionId: session.messages[session.messages.length - 1].sessionId,
-            createdAt: session.messages[session.messages.length - 1].createdAt,
-          }
-        : undefined,
+      messageCount,
+      lastMessage: lastMessage ? {
+        id: lastMessage.id,
+        content: lastMessage.content,
+        role: lastMessage.role as 'user' | 'assistant' | 'system',
+        sessionId: lastMessage.sessionId,
+        createdAt: lastMessage.createdAt,
+      } : undefined,
     };
   }
 

@@ -1,11 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
-import { User } from './user.entity';
-import { ChatMessage } from './chat-message.entity';
+import { Entity, ObjectIdColumn, ObjectId, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('chat_sessions')
 export class ChatSession {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @ObjectIdColumn()
+  _id: ObjectId;
 
   @Column()
   title: string;
@@ -16,18 +14,17 @@ export class ChatSession {
   @Column({ default: true })
   isActive: boolean;
 
-  @ManyToOne(() => User, user => user.chatSessions)
-  user: User;
-
   @Column()
   userId: string;
-
-  @OneToMany(() => ChatMessage, message => message.session)
-  messages: ChatMessage[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Helper method to get string ID
+  get id(): string {
+    return this._id.toHexString();
+  }
 }

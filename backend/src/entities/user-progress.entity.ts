@@ -90,10 +90,8 @@ export class UserProgress {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Relations
-  @ManyToOne(() => User, (user) => user.progress)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  // Relations - Removed for MongoDB compatibility
+  // User relationship managed via userId field
 
   @ManyToOne(() => CareerRoadmap, { nullable: true })
   @JoinColumn({ name: 'roadmap_id' })

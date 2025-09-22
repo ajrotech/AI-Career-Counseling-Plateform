@@ -92,10 +92,8 @@ export class Notification {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Relations
-  @ManyToOne(() => User, (user) => user.notifications)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  // Relations - Removed for MongoDB compatibility
+  // User relationship managed via userId field
 
   // Helper methods for JSON fields
   setMetadata(metadata: Record<string, any>) {

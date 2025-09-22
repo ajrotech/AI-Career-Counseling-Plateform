@@ -14,6 +14,7 @@ import {
   UsePipes,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,10 +25,13 @@ import { SendMessageDto, CreateSessionDto } from './dto/chat.dto';
 import { CareerRoadmapPreferencesDto } from './dto/career-roadmap.dto';
 import { User } from '../../entities/user.entity';
 import { RateLimitGuard } from '../../guards/rate-limit.guard';
-import { GetOptionalUser } from '../auth/decorators/get-optional-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @ApiTags('chat')
 @Controller('chat')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class ChatController {
   constructor(
@@ -37,40 +41,18 @@ export class ChatController {
   ) {}
 
   /**
-   * Helper method to get user ID with fallback to demo user for development
-   * In production, authentication should be required for all endpoints
+   * Helper method to get user ID
+   * Requires authentication for all endpoints
    */
-  private async getUserId(optionalUser?: User): Promise<string> {
+  private getUserId(user: User): string {
     console.log('🔍 [CHAT CONTROLLER] Getting user ID...');
     
-    if (optionalUser?.id) {
-      console.log('✅ [CHAT CONTROLLER] Using authenticated user ID:', optionalUser.id);
-      return optionalUser.id;
+    if (!user?.id) {
+      throw new UnauthorizedException('Authentication required');
     }
     
-    console.log('⚠️ [CHAT CONTROLLER] No authenticated user, using demo user');
-    // Fallback for demo/development mode
-    const demoUserId = await this.ensureDemoUser();
-    console.log('🎭 [CHAT CONTROLLER] Demo user ID:', demoUserId);
-    return demoUserId;
-  }
-  private async ensureDemoUser(): Promise<string> {
-    const demoUserId = 'demo-user-id';
-    const existingUser = await this.userRepository.findOne({ where: { id: demoUserId } });
-    
-    if (!existingUser) {
-      const demoUser = this.userRepository.create({
-        id: demoUserId,
-        email: 'demo@example.com',
-        username: 'demo_user',
-        role: 'student',
-        emailVerified: true,
-        isActive: true,
-      });
-      await this.userRepository.save(demoUser);
-    }
-    
-    return demoUserId;
+    console.log('✅ [CHAT CONTROLLER] Using authenticated user ID:', user.id);
+    return user.id;
   }
 
   @Post('message')
@@ -80,14 +62,14 @@ export class ChatController {
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async sendMessage(
     @Body() sendMessageDto: SendMessageDto, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
     console.log('🚀 [CHAT CONTROLLER] POST /chat/message - Request received');
     console.log('📝 [CHAT CONTROLLER] Message DTO:', JSON.stringify(sendMessageDto, null, 2));
-    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}, Email: ${user.email}` : 'No user (demo mode)');
+    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}, Email: ${user.email}` : 'No user');
     
     try {
-      const userId = await this.getUserId(user);
+      const userId = this.getUserId(user);
       console.log('🔑 [CHAT CONTROLLER] Using userId:', userId);
       
       const result = await this.chatService.sendMessage(userId, sendMessageDto);
@@ -107,11 +89,11 @@ export class ChatController {
   }
 
   @Get('sessions')
-  async getSessions(@GetOptionalUser() user?: User) {
+  async getSessions(@GetUser() user: User) {
     console.log('🚀 [CHAT CONTROLLER] GET /chat/sessions - Request received');
-    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}` : 'No user (demo mode)');
+    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}` : 'No user');
     
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     console.log('🔑 [CHAT CONTROLLER] Using userId:', userId);
     
     const sessions = await this.chatService.getUserSessions(userId);
@@ -123,9 +105,9 @@ export class ChatController {
   @Post('sessions')
   async createSession(
     @Body() createSessionDto: CreateSessionDto, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     return this.chatService.createSession(userId, createSessionDto);
   }
 
@@ -135,13 +117,13 @@ export class ChatController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   async getSession(
     @Param('id') sessionId: string, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
     console.log('🚀 [CHAT CONTROLLER] GET /chat/sessions/:id - Request received');
     console.log('🔑 [CHAT CONTROLLER] Session ID:', sessionId);
-    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}` : 'No user (demo mode)');
+    console.log('👤 [CHAT CONTROLLER] User:', user ? `ID: ${user.id}` : 'No user');
     
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     console.log('🔑 [CHAT CONTROLLER] Using userId:', userId);
     
     const session = await this.chatService.getSession(sessionId, userId);
@@ -157,18 +139,18 @@ export class ChatController {
   @Get('sessions/:id/messages')
   async getSessionMessages(
     @Param('id') sessionId: string, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     return this.chatService.getSessionMessages(sessionId, userId);
   }
 
   @Delete('sessions/:id')
   async deleteSession(
     @Param('id') sessionId: string, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     await this.chatService.deleteSession(sessionId, userId);
     return { success: true };
   }
@@ -177,9 +159,9 @@ export class ChatController {
   @UseInterceptors(FileInterceptor('file'))
   async analyzeDocument(
     @UploadedFile() file: Express.Multer.File,
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
@@ -194,9 +176,9 @@ export class ChatController {
   @Post('career-roadmap')
   async generateCareerRoadmap(
     @Body() preferences: CareerRoadmapPreferencesDto, 
-    @GetOptionalUser() user?: User
+    @GetUser() user: User
   ) {
-    const userId = await this.getUserId(user);
+    const userId = this.getUserId(user);
     return this.chatService.generateCareerRoadmap(userId, preferences);
   }
 }
