@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from './Navigation';
+import authService from '@/services/auth';
+import { authToasts, showToast } from '@/utils/toast';
 
 interface FormData {
   firstName: string;
@@ -28,6 +30,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [apiError, setApiError] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,6 +83,13 @@ const RegisterPage = () => {
     }
 
     setErrors(newErrors);
+    
+    // Show toast for validation errors
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      showToast.warning(firstError || 'Please fix the errors in the form');
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
@@ -89,13 +99,54 @@ const RegisterPage = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setApiError('');
     
-    // Simulate registration process
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Show loading toast
+    authToasts.registerLoading();
     
-    // Redirect to dashboard or verification page
-    router.push('/dashboard');
-    setIsLoading(false);
+    try {
+      console.log('🚀 [REGISTER] Attempting registration with:', { 
+        firstName: formData.firstName,
+        lastName: formData.lastName, 
+        email: formData.email 
+      });
+      
+      const response = await authService.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: 'student'
+      });
+      
+      console.log('📥 [REGISTER] Response:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ [REGISTER] Registration successful!');
+        console.log('👤 [REGISTER] User:', response.data.user);
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Success toast
+        authToasts.registerSuccess(formData.firstName);
+        
+        // Redirect to dashboard
+        router.push('/dashboard');
+      } else {
+        console.error('❌ [REGISTER] Registration failed:', response.error);
+        const errorMessage = response.error || 'Registration failed. Please try again.';
+        setApiError(errorMessage);
+        authToasts.registerError(errorMessage);
+      }
+    } catch (error) {
+      console.error('❌ [REGISTER] Registration error:', error);
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setApiError(errorMessage);
+      authToasts.registerError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -152,6 +203,12 @@ const RegisterPage = () => {
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {apiError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {apiError}
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>

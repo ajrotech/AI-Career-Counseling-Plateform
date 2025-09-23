@@ -2,6 +2,9 @@ import './globals.css'
 import { Inter, Roboto } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { Toaster } from 'react-hot-toast'
+import '@/utils/debugAuth' // Import debug utilities for browser console
+import '@/utils/manualAuthTest' // Import manual testing tools
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -39,6 +42,28 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             {children}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+                success: {
+                  duration: 3000,
+                  style: {
+                    background: '#10b981',
+                  },
+                },
+                error: {
+                  duration: 5000,
+                  style: {
+                    background: '#ef4444',
+                  },
+                },
+              }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

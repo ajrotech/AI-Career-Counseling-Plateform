@@ -10,44 +10,77 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  role?: string;
 }
 
 export interface User {
   id: string;
-  name: string;
   email: string;
-  avatar?: string;
-  plan: 'free' | 'pro' | 'enterprise';
-  createdAt: string;
-  updatedAt: string;
+  username: string;
+  role: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  profile?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  accessToken: string;
   refreshToken: string;
+  message: string;
 }
 
 class AuthAPI {
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
+    console.log('🔐 [AUTH SERVICE] Starting login process...');
     const response = await apiService.post<AuthResponse>('/auth/login', credentials);
     
+    console.log('📥 [AUTH SERVICE] Login response:', response);
+    
     if (response.success && response.data) {
-      apiService.setAuthToken(response.data.token);
+      console.log('✅ [AUTH SERVICE] Login successful, setting token...');
+      console.log('🔑 [AUTH SERVICE] Access token received:', response.data.accessToken ? 'Yes' : 'No');
+      console.log('🔑 [AUTH SERVICE] Token preview:', response.data.accessToken?.substring(0, 20) + '...');
+      
+      apiService.setAuthToken(response.data.accessToken);
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem('auth_token');
+      console.log('💾 [AUTH SERVICE] Token stored in localStorage:', storedToken ? 'Yes' : 'No');
+      console.log('💾 [AUTH SERVICE] Stored token preview:', storedToken?.substring(0, 20) + '...');
+    } else {
+      console.log('❌ [AUTH SERVICE] Login failed:', response.error);
     }
     
     return response;
   }
 
   async register(data: RegisterData): Promise<ApiResponse<AuthResponse>> {
+    console.log('📝 [AUTH SERVICE] Starting registration process...');
     const response = await apiService.post<AuthResponse>('/auth/register', data);
     
+    console.log('📥 [AUTH SERVICE] Registration response:', response);
+    
     if (response.success && response.data) {
-      apiService.setAuthToken(response.data.token);
+      console.log('✅ [AUTH SERVICE] Registration successful, setting token...');
+      console.log('🔑 [AUTH SERVICE] Access token received:', response.data.accessToken ? 'Yes' : 'No');
+      console.log('🔑 [AUTH SERVICE] Token preview:', response.data.accessToken?.substring(0, 20) + '...');
+      
+      apiService.setAuthToken(response.data.accessToken);
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem('auth_token');
+      console.log('💾 [AUTH SERVICE] Token stored in localStorage:', storedToken ? 'Yes' : 'No');
+      console.log('💾 [AUTH SERVICE] Stored token preview:', storedToken?.substring(0, 20) + '...');
+    } else {
+      console.log('❌ [AUTH SERVICE] Registration failed:', response.error);
     }
     
     return response;

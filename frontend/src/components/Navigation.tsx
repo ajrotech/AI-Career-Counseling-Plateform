@@ -40,6 +40,7 @@ interface UserProfile {
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const router = useRouter();
@@ -69,17 +70,29 @@ const Navigation = () => {
     checkUserAuth();
   }, []);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setIsUserMenuOpen(false);
+        setIsNotificationMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Dynamic navigation items based on user state
   const getNavItems = () => {
     const baseItems = [
-      { name: 'Home', href: '/', icon: Home, showAlways: true },
       { name: 'Assessments', href: '/assessments', icon: Brain, showAlways: true },
     ];
 
     if (isLoggedIn) {
       return [
         ...baseItems,
-        { name: 'Dashboard', href: '/dashboard', icon: TrendingUp, showAlways: false },
         { name: 'AI Chat', href: '/chat', icon: MessageCircle, showAlways: false },
         { name: 'Career Paths', href: '/career-paths', icon: Target, showAlways: false },
         { name: 'Mentorship', href: '/mentorship', icon: Users, showAlways: false },
@@ -125,6 +138,13 @@ const Navigation = () => {
     setUserProfile(null);
     setIsUserMenuOpen(false);
     router.push('/');
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    if (userProfile) {
+      setUserProfile({ ...userProfile, notifications: 0 });
+    }
+    setIsNotificationMenuOpen(false);
   };
 
   return (
@@ -198,8 +218,11 @@ const Navigation = () => {
               // Logged in user elements
               <>
                 {/* Notifications */}
-                <div className="relative">
-                  <button className="relative p-2 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200">
+                <div className="relative dropdown-container">
+                  <button 
+                    onClick={() => setIsNotificationMenuOpen(!isNotificationMenuOpen)}
+                    className="relative p-2 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+                  >
                     <Bell className="h-5 w-5" />
                     {userProfile?.notifications && userProfile.notifications > 0 && (
                       <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -207,19 +230,76 @@ const Navigation = () => {
                       </span>
                     )}
                   </button>
+
+                  {/* Notifications Dropdown */}
+                  {isNotificationMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700 z-50">
+                      <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Notifications</h3>
+                          <button 
+                            onClick={() => setIsNotificationMenuOpen(false)}
+                            className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {/* Sample notifications */}
+                        <div className="p-3 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-b border-neutral-100 dark:border-neutral-600">
+                          <div className="flex items-start space-x-3">
+                            <div className="h-2 w-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white">New career assessment available</p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Discover your ideal career path with our updated assessment tool.</p>
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">2 hours ago</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-b border-neutral-100 dark:border-neutral-600">
+                          <div className="flex items-start space-x-3">
+                            <div className="h-2 w-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white">Mentorship session scheduled</p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Your session with Sarah Johnson is scheduled for tomorrow at 3 PM.</p>
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">1 day ago</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-b border-neutral-100 dark:border-neutral-600">
+                          <div className="flex items-start space-x-3">
+                            <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-white">New course recommendation</p>
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Based on your interests, we recommend "Data Science Fundamentals".</p>
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">3 days ago</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={handleMarkAllNotificationsRead}
+                            className="flex-1 text-center text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 font-medium py-2 px-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          >
+                            Mark all read
+                          </button>
+                          <button 
+                            onClick={() => router.push('/notifications')}
+                            className="flex-1 text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-2 px-3 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                          >
+                            View all
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Quick Actions for logged in users */}
-                <button
-                  onClick={() => router.push('/assessments')}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors duration-200"
-                >
-                  <Brain className="h-4 w-4" />
-                  <span className="hidden xl:inline">New Assessment</span>
-                </button>
-
                 {/* User Profile Dropdown */}
-                <div className="relative">
+                <div className="relative dropdown-container">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center space-x-3 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
@@ -426,9 +506,16 @@ const Navigation = () => {
                   )}
                 </div>
                 
-                <Link href="/dashboard" className="flex items-center space-x-3 px-4 py-3 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg text-base font-medium transition-all duration-200" onClick={() => setIsMenuOpen(false)}>
-                  <TrendingUp className="h-5 w-5" />
-                  <span>Dashboard</span>
+                <Link href="/notifications" className="flex items-center space-x-3 px-4 py-3 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg text-base font-medium transition-all duration-200" onClick={() => setIsMenuOpen(false)}>
+                  <Bell className="h-5 w-5" />
+                  <span>Notifications</span>
+                  {userProfile?.notifications && userProfile.notifications > 0 && (
+                    <div className="ml-auto">
+                      <span className="h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        {userProfile.notifications}
+                      </span>
+                    </div>
+                  )}
                 </Link>
                 
                 <Link href="/profile" className="flex items-center space-x-3 px-4 py-3 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg text-base font-medium transition-all duration-200" onClick={() => setIsMenuOpen(false)}>

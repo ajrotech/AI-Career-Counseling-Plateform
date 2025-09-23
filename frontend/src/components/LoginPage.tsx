@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from './Navigation';
+import authService from '@/services/auth';
+import { authToasts } from '@/utils/toast';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,7 @@ const LoginPage = () => {
     rememberMe: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
@@ -26,13 +29,47 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate login process
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Show loading toast
+    authToasts.loginLoading();
     
-    // Redirect to dashboard
-    router.push('/dashboard');
-    setIsLoading(false);
+    try {
+      console.log('🚀 [LOGIN] Attempting login with:', { email: formData.email });
+      
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      console.log('📥 [LOGIN] Response:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ [LOGIN] Login successful!');
+        console.log('👤 [LOGIN] User:', response.data.user);
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Success toast
+        authToasts.loginSuccess(response.data.user.profile?.firstName);
+        
+        // Redirect to dashboard
+        router.push('/dashboard');
+      } else {
+        console.error('❌ [LOGIN] Login failed:', response.error);
+        const errorMessage = response.error || 'Login failed. Please try again.';
+        setError(errorMessage);
+        authToasts.loginError(errorMessage);
+      }
+    } catch (error) {
+      console.error('❌ [LOGIN] Login error:', error);
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setError(errorMessage);
+      authToasts.loginError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -118,6 +155,22 @@ const LoginPage = () => {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 body-font">
                   Email Address
